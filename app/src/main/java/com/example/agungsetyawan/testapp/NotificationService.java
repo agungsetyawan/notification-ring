@@ -1,17 +1,12 @@
 package com.example.agungsetyawan.testapp;
 
-import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
-import android.graphics.Bitmap;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-
-import java.io.ByteArrayOutputStream;
+import android.widget.Toast;
 
 /**
  * Created by agungsetyawan on 3/21/18.
@@ -19,56 +14,50 @@ import java.io.ByteArrayOutputStream;
 
 public class NotificationService extends NotificationListenerService {
 
-    Context context;
+    private static String TAG = NotificationService.class.getSimpleName();
+    protected Context context;
+    AudioManager audioManager;
+    MainActivity mainActivity;
 
     @Override
     public void onCreate() {
         super.onCreate();
         context = getApplicationContext();
+        mainActivity = new MainActivity();
+        Log.i("NotificationService", "Create");
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         String pack = sbn.getPackageName();
-        String ticker = "";
-        final AudioManager audioManager = (AudioManager) getBaseContext().getSystemService(Context.AUDIO_SERVICE);
+        Log.i("NotificationService", "ada notif baru!");
 
+        if (pack.equalsIgnoreCase("com.whatsapp")) {
 
-        if (sbn.getNotification().tickerText != null) {
-            ticker = sbn.getNotification().tickerText.toString();
+            String ticker = "";
+            if (sbn.getNotification().tickerText != null) {
+                ticker = sbn.getNotification().tickerText.toString();
+            }
+
+            Bundle extras = sbn.getNotification().extras;
+            String title = extras.getString("android.title");
+            String text = extras.getCharSequence("android.text").toString();
+
+            Log.i(TAG, "Package: " + pack);
+            Log.i(TAG, "Ticker: " + ticker);
+            Log.i(TAG, "Title: " + title);
+            Log.i(TAG, "Text: " + text);
+
+            if ((ticker.equalsIgnoreCase("Missed call from Ageng Mirum")) || (ticker.equalsIgnoreCase("Missed call from Friskaku \uD83D\uDC95"))) {
+                if (title.equalsIgnoreCase("3 missed voice calls")) {
+                    audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+                    audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+                    audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
+                    Toast.makeText(getApplicationContext(), "Normal", Toast.LENGTH_SHORT).show();
+                    Log.i(TAG, "Ring : Normal");
+                }
+            }
         }
-
-        Bundle extras = sbn.getNotification().extras;
-        String title = extras.getString("android.title");
-        String text = extras.getCharSequence("android.text").toString();
-        Bitmap id = sbn.getNotification().largeIcon;
-
-        Log.i("Package", pack);
-        Log.i("Ticker", ticker);
-        Log.i("Title", title);
-        Log.i("Text", text);
-
-//        Friskaku 💕
-        if (pack.equals("com.whatsapp") && ticker.equals("Missed call from Ageng Mirum") && title.equals("3 missed voice calls")) {
-            audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
-            audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
-            Log.i("Ring", "Normal");
-        }
-
-        Intent msgrcv = new Intent("Msg");
-        msgrcv.putExtra("package", pack);
-        msgrcv.putExtra("ticker", ticker);
-        msgrcv.putExtra("title", title);
-        msgrcv.putExtra("text", text);
-
-        if (id != null) {
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            id.compress(Bitmap.CompressFormat.PNG, 100, stream);
-            byte[] byteArray = stream.toByteArray();
-            msgrcv.putExtra("icon", byteArray);
-        }
-
-        LocalBroadcastManager.getInstance(context).sendBroadcast(msgrcv);
     }
 
     @Override

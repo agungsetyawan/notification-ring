@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">TestApp</string>
-    <string name="action_settings">Notification Settings</string>
-    <string name="togglebutton">ToggleButton</string>
+    <string name="app_name">Notification Ring</string>
+    <string name="normal">Normal</string>
+    <string name="silent">Silent</string>
 </resources>
