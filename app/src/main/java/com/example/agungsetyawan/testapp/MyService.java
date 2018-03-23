@@ -3,9 +3,7 @@ package com.example.agungsetyawan.testapp;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.service.notification.NotificationListenerService;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 /**
  * Created by agungsetyawan on 3/22/18.
