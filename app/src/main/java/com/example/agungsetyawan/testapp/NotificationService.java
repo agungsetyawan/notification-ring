@@ -1,11 +1,16 @@
 package com.example.agungsetyawan.testapp;
 
+import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.view.View;
 import android.widget.Toast;
 
 /**
@@ -18,6 +23,7 @@ public class NotificationService extends NotificationListenerService {
     protected Context context;
     AudioManager audioManager;
     MainActivity mainActivity;
+    private SharedPreferences sharedPreferences;
 
     @Override
     public void onCreate() {
@@ -25,6 +31,16 @@ public class NotificationService extends NotificationListenerService {
         context = getApplicationContext();
         mainActivity = new MainActivity();
         Log.i("NotificationService", "Create");
+        sendNotification();
+    }
+
+    public void sendNotification() {
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+                .setSmallIcon(R.drawable.ic_launcher_background)
+                .setContentTitle("Notification Ring")
+                .setContentText("Service is running");
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(001, mBuilder.build());
     }
 
     @Override

@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -42,7 +43,11 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_PICK_CONTACTS = 1;
     private Uri uriContact;
-    private String contactID;     // contacts unique ID
+    private String contactID;
+    public String contactName = null;
+    public String contactNumber = null;
+
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,17 +68,23 @@ public class MainActivity extends AppCompatActivity {
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         Log.i(TAG, "Ringer Mode " + audioManager.getRingerMode());
 
+        sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        if (sharedPreferences.contains("Name")) {
+            loadData();
+        }
+
         checkRingerMode();
         onCheckedSwitch();
+        startService();
     }
 
-    public void startService(View view) {
-        Intent intent = new Intent(this, MyService.class);
+    public void startService() {
+        Intent intent = new Intent(this, NotificationService.class);
         startService(intent);
     }
 
-    public void stopService(View view) {
-        Intent intent = new Intent(this, MyService.class);
+    public void stopService() {
+        Intent intent = new Intent(this, NotificationService.class);
         stopService(intent);
     }
 
@@ -83,9 +94,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!notificationManager.isNotificationPolicyAccessGranted()) {
-//                Intent intent1 = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-                Intent intent2 = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
-                startActivity(intent2);
+                Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+                startActivity(intent);
             } else {
                 switch1.setEnabled(true);
                 permission = true;
@@ -149,15 +159,13 @@ public class MainActivity extends AppCompatActivity {
         // in Marshmallow
         // 2) Always check for permission (even if permission has already been granted)
         // since the user can revoke permissions at any time through Settings
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
 
             // The permission is NOT already granted.
             // Check if the user has been asked about this permission already and denied
             // it. If so, we want to give more explanation about why the permission is needed.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (shouldShowRequestPermissionRationale(
-                        Manifest.permission.READ_CONTACTS)) {
+                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_CONTACTS)) {
                     // Show our own UI to explain to the user why we need to read the contacts
                     // before actually requesting the permission and showing the default UI
                 }
@@ -166,21 +174,17 @@ public class MainActivity extends AppCompatActivity {
             // Fire off an async request to actually get the permission
             // This will show the standard permission request dialog UI
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},
-                        READ_CONTACTS_PERMISSIONS_REQUEST);
+                requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, READ_CONTACTS_PERMISSIONS_REQUEST);
             }
         }
     }
 
     // Callback with the request from calling requestPermissions(...)
     @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[],
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[], @NonNull int[] grantResults) {
         // Make sure it's our original READ_CONTACTS request
         if (requestCode == READ_CONTACTS_PERMISSIONS_REQUEST) {
-            if (grantResults.length == 1 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Read Contacts permission granted", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
@@ -192,6 +196,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClickSelectContact(View btnSelectContact) {
         getPermissionToReadUserContacts();
+        loadData();
 
         // using native contacts selection
         // Intent.ACTION_PICK = Pick an item from the data, returning what was selected.
@@ -208,8 +213,8 @@ public class MainActivity extends AppCompatActivity {
 
             retrieveContactName();
             retrieveContactNumber();
+            saveData();
 //            retrieveContactPhoto();
-
         }
     }
 
@@ -238,15 +243,12 @@ public class MainActivity extends AppCompatActivity {
 
     private void retrieveContactNumber() {
 
-        String contactNumber = null;
-
         // getting contacts ID
         Cursor cursorID = getContentResolver().query(uriContact,
                 new String[]{ContactsContract.Contacts._ID},
                 null, null, null);
 
         if (cursorID.moveToFirst()) {
-
             contactID = cursorID.getString(cursorID.getColumnIndex(ContactsContract.Contacts._ID));
         }
 
@@ -276,8 +278,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void retrieveContactName() {
 
-        String contactName = null;
-
         // querying contact data store
         Cursor cursor = getContentResolver().query(uriContact, null, null, null, null);
 
@@ -293,6 +293,20 @@ public class MainActivity extends AppCompatActivity {
         textView1.setText(contactName);
         Log.d(TAG, "Contact Name: " + contactName);
 
+    }
+
+    private void saveData() {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("Name", contactName);
+        editor.putString("Number", contactNumber);
+        editor.apply();
+    }
+
+    public void loadData() {
+        contactName = sharedPreferences.getString("Name", "");
+        contactNumber = sharedPreferences.getString("Number", "");
+        textView1.setText(contactName);
+        textView2.setText(contactNumber);
     }
 
     public void onClickWhatsApp(View view) {
