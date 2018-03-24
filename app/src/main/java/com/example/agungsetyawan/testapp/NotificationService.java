@@ -2,7 +2,6 @@ package com.example.agungsetyawan.testapp;
 
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.os.Bundle;
@@ -10,7 +9,6 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.view.View;
 import android.widget.Toast;
 
 /**
@@ -24,6 +22,8 @@ public class NotificationService extends NotificationListenerService {
     AudioManager audioManager;
     MainActivity mainActivity;
     private SharedPreferences sharedPreferences;
+    private String contactName;
+    private String contactNumber;
 
     @Override
     public void onCreate() {
@@ -31,14 +31,26 @@ public class NotificationService extends NotificationListenerService {
         context = getApplicationContext();
         mainActivity = new MainActivity();
         Log.i("NotificationService", "Create");
+
+        sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
+        if (sharedPreferences.contains("Name")) {
+            loadData();
+        }
+
         sendNotification();
+        Log.i(TAG, "ContactName: " + contactName);
+    }
+
+    public void loadData() {
+        contactName = sharedPreferences.getString("Name", "");
+        contactNumber = sharedPreferences.getString("Number", "");
     }
 
     public void sendNotification() {
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .setContentTitle("Notification Ring")
-                .setContentText("Service is running");
+                .setContentText("Service is running for contact " + contactName);
         NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.notify(001, mBuilder.build());
     }
@@ -46,7 +58,7 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         String pack = sbn.getPackageName();
-        Log.i("NotificationService", "ada notif baru!");
+        Log.i(TAG, "ada notif baru!");
 
         if (pack.equalsIgnoreCase("com.whatsapp")) {
 
@@ -64,7 +76,7 @@ public class NotificationService extends NotificationListenerService {
             Log.i(TAG, "Title: " + title);
             Log.i(TAG, "Text: " + text);
 
-            if ((ticker.equalsIgnoreCase("Missed call from Ageng Mirum")) || (ticker.equalsIgnoreCase("Missed call from Friskaku \uD83D\uDC95"))) {
+            if ((ticker.equalsIgnoreCase("Missed call from Ageng Mirum")) || (ticker.equalsIgnoreCase("Missed call from " + contactName))) {
                 if (title.equalsIgnoreCase("3 missed voice calls")) {
                     audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                     audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);

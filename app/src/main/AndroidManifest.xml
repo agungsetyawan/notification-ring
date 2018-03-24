@@ -29,10 +29,10 @@
             </intent-filter>
         </service>
 
-        <service android:name=".MyService"
-            android:exported="false"
-            android:label="Service Hereuy">
-        </service>
+        <!--<service android:name=".MyService"-->
+            <!--android:exported="false"-->
+            <!--android:label="Service Hereuy">-->
+        <!--</service>-->
 
     </application>
 </manifest>

@@ -44,8 +44,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_PICK_CONTACTS = 1;
     private Uri uriContact;
     private String contactID;
-    public String contactName = null;
-    public String contactNumber = null;
+    private String contactName = null;
+    private String contactNumber = null;
 
     private SharedPreferences sharedPreferences;
 
