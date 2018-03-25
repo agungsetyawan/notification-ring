@@ -40,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView textView1;
     private TextView textView2;
     AudioManager audioManager;
+    NotificationManager notificationManager;
 
     private static final int REQUEST_CODE_PICK_CONTACTS = 1;
     private Uri uriContact;
@@ -63,10 +64,12 @@ public class MainActivity extends AppCompatActivity {
         textView1 = findViewById(R.id.textView1);
         textView2 = findViewById(R.id.textView2);
         switch1 = findViewById(R.id.switch1);
-
-        switch1.setEnabled(checkPermission());
+        switch1.setEnabled(false);
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        notificationManager = (NotificationManager) getBaseContext().getSystemService(Context.NOTIFICATION_SERVICE);
         Log.i(TAG, "Ringer Mode " + audioManager.getRingerMode());
+
+        checkPermission();
 
         sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         if (sharedPreferences.contains("Name")) {
@@ -88,21 +91,15 @@ public class MainActivity extends AppCompatActivity {
         stopService(intent);
     }
 
-    private boolean checkPermission() {
-        boolean permission = false;
-        NotificationManager notificationManager = (NotificationManager) getBaseContext().getSystemService(Context.NOTIFICATION_SERVICE);
-
+    private void checkPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!notificationManager.isNotificationPolicyAccessGranted()) {
                 Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                 startActivity(intent);
             } else {
                 switch1.setEnabled(true);
-                permission = true;
             }
         }
-
-        return permission;
     }
 
     private void checkRingerMode() {
@@ -175,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
             // This will show the standard permission request dialog UI
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, READ_CONTACTS_PERMISSIONS_REQUEST);
+                requestPermissions(new String[]{Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE}, READ_CONTACTS_PERMISSIONS_REQUEST);
             }
         }
     }
