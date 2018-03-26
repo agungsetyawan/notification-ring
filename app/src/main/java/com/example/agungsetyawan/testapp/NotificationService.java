@@ -2,15 +2,15 @@ package com.example.agungsetyawan.testapp;
 
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 /**
  * Created by agungsetyawan on 3/21/18.
@@ -20,9 +20,12 @@ public class NotificationService extends NotificationListenerService {
 
     private static String TAG = NotificationService.class.getSimpleName();
     protected Context context;
-    AudioManager audioManager;
     private SharedPreferences sharedPreferences;
+    int currentInterruptionFilter;
+    int currentRingerMode;
     private String contactName;
+    AudioManager audioManager;
+    NotificationManager notificationManager;
 
     @Override
     public void onCreate() {
@@ -30,9 +33,26 @@ public class NotificationService extends NotificationListenerService {
         context = getApplicationContext();
         Log.i(TAG, "Create");
 
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        currentRingerMode = audioManager.getRingerMode();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (notificationManager != null) {
+                currentInterruptionFilter = notificationManager.getCurrentInterruptionFilter();
+            }
+        }
         sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         if (sharedPreferences.contains("Name")) {
             contactName = sharedPreferences.getString("Name", "");
+        }
+        else {
+            contactName = "init";
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (notificationManager != null) {
+                currentInterruptionFilter = notificationManager.getCurrentInterruptionFilter();
+            }
         }
 
         sendNotification();
@@ -40,26 +60,24 @@ public class NotificationService extends NotificationListenerService {
     }
 
     public void sendNotification() {
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .setContentTitle("Notification Ring")
                 .setContentText("NotificationService is running for contact " + contactName);
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(001, mBuilder.build());
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.notify(001, builder.build());
     }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
-        Log.i(TAG, "notification");
+        Log.i(TAG, "New Notification");
         String pack = sbn.getPackageName();
 
         if (pack.equalsIgnoreCase("com.whatsapp")) {
-
             String ticker = "";
             if (sbn.getNotification().tickerText != null) {
                 ticker = sbn.getNotification().tickerText.toString();
             }
-
             Bundle extras = sbn.getNotification().extras;
             String title = extras.getString("android.title");
             String text = extras.getCharSequence("android.text").toString();
@@ -75,20 +93,18 @@ public class NotificationService extends NotificationListenerService {
                 if ((ticker.equalsIgnoreCase("Missed call from " + contactName))) {
                     if (i >= 3) {
                         if (title.equalsIgnoreCase(titleFirstString + " missed voice calls")) {
-                            audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                            audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
-                            audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
-                            Log.i(TAG, "Ring : Normal");
+                            if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
+                                ringerModeNormal();
+                            } else {
+                                ringerModeNormal();
+                            }
                         }
                     }
                 } else {
                     if (i >= 3) {
                         if (title.equalsIgnoreCase(titleFirstString + " missed voice calls")) {
                             if (text.contains(contactName)) {
-                                audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-                                audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
-                                audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
-                                Log.i(TAG, "Ring : Normal");
+                                ringerModeNormal();
                             }
                         }
                     }
@@ -99,6 +115,16 @@ public class NotificationService extends NotificationListenerService {
 
     @Override
     public void onNotificationRemoved(StatusBarNotification sbn) {
-        Log.i("Msg", "Notification Removed");
+        Log.i("msg", "Notification Removed");
+    }
+
+    private void ringerModeNormal() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);
+        }
+        audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+        audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
+        Toast.makeText(getApplicationContext(), "Normal", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "Ring : Normal");
     }
 }

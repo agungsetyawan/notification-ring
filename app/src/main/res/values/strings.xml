@@ -2,4 +2,5 @@
     <string name="app_name">Notification Ring</string>
     <string name="normal">Normal</string>
     <string name="silent">Silent</string>
+    <string name="vibrate">Vibrate</string>
 </resources>

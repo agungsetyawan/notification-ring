@@ -49,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     private String contactNumber = null;
 
     private SharedPreferences sharedPreferences;
+    int currentInterruptionFilter;
+    int currentRingerMode;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,25 +59,25 @@ public class MainActivity extends AppCompatActivity {
 
         CloudRail.setAppKey("5aaf59c8524fab28a187ade7");
 
-        // In an actual app, you'd want to request a permission when the user performs an action
-        // that requires that permission.
-        getPermissionToReadUserContacts();
-
         textView1 = findViewById(R.id.textView1);
         textView2 = findViewById(R.id.textView2);
         switch1 = findViewById(R.id.switch1);
         switch1.setEnabled(false);
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        notificationManager = (NotificationManager) getBaseContext().getSystemService(Context.NOTIFICATION_SERVICE);
-        Log.i(TAG, "Ringer Mode " + audioManager.getRingerMode());
-
-        checkPermission();
-
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        currentRingerMode = audioManager.getRingerMode();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (notificationManager != null) {
+                currentInterruptionFilter = notificationManager.getCurrentInterruptionFilter();
+            }
+        }
         sharedPreferences = getSharedPreferences("MyPrefs", Context.MODE_PRIVATE);
         if (sharedPreferences.contains("Name")) {
             loadData();
         }
 
+        getPermissionToNotificationListener();
+        getPermissionToReadUserContacts();
         checkRingerMode();
         onCheckedSwitch();
         startService();
@@ -91,8 +93,11 @@ public class MainActivity extends AppCompatActivity {
         stopService(intent);
     }
 
-    private void checkPermission() {
+    private void getPermissionToNotificationListener() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Log.i(TAG, "Ringer Mode = " + currentRingerMode);
+            Log.i(TAG, "currentInterruptionFilter = " + currentInterruptionFilter);
+
             if (!notificationManager.isNotificationPolicyAccessGranted()) {
                 Intent intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                 startActivity(intent);
@@ -112,19 +117,40 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void ringerModeNormal() {
-        audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
-        audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
-        Toast.makeText(getApplicationContext(), "Normal", Toast.LENGTH_SHORT).show();
-        switch1.setText(R.string.normal);
-        Log.i(TAG, "Ring : Normal");
+    private void ringerModeNormal() {
+        if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);
+            }
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
+            Toast.makeText(getApplicationContext(), "Normal", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Ring : Normal");
+        }
     }
 
-    public void ringerModeSilent() {
-        audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
-        Toast.makeText(getApplicationContext(), "Silent", Toast.LENGTH_SHORT).show();
-        switch1.setText(R.string.silent);
-        Log.i(TAG, "Ring : Silent");
+    private void ringerModeSilent() {
+        if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
+            }
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+            Toast.makeText(getApplicationContext(), "Silent", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Ring : Silent");
+        }
+    }
+
+    public void ringerModeVibrate() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY);
+        }
+        audioManager.setRingerMode(AudioManager.RINGER_MODE_VIBRATE);
+        Toast.makeText(getApplicationContext(), "Vibrate", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "Ring : Vibrate");
+    }
+
+    public void onClickRingerModeVibrate(View view) {
+        ringerModeVibrate();
     }
 
     private void onCheckedSwitch() {
@@ -134,14 +160,24 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     if (isChecked) {
                         ringerModeNormal();
+                        switch1.setText(R.string.normal);
                     } else {
                         ringerModeSilent();
+                        switch1.setText(R.string.silent);
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         });
+    }
+
+    public void onClickSettingButton(View view) {
+        Intent intent = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1) {
+            intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+        }
+        startActivity(intent);
     }
 
     // Identifier for the permission request
@@ -212,6 +248,7 @@ public class MainActivity extends AppCompatActivity {
             retrieveContactName();
             retrieveContactNumber();
             saveData();
+            startService();
 //            retrieveContactPhoto();
         }
     }
@@ -228,6 +265,9 @@ public class MainActivity extends AppCompatActivity {
                 photo = BitmapFactory.decodeStream(inputStream);
                 ImageView imageView = findViewById(R.id.img_contact);
                 imageView.setImageBitmap(photo);
+            } else {
+                ImageView imageView = findViewById(R.id.img_contact);
+                imageView.setImageResource(R.mipmap.ic_launcher);
             }
 
             assert inputStream != null;
@@ -246,7 +286,7 @@ public class MainActivity extends AppCompatActivity {
                 new String[]{ContactsContract.Contacts._ID},
                 null, null, null);
 
-        if (cursorID.moveToFirst()) {
+        if (cursorID != null && cursorID.moveToFirst()) {
             contactID = cursorID.getString(cursorID.getColumnIndex(ContactsContract.Contacts._ID));
         }
 
@@ -265,7 +305,7 @@ public class MainActivity extends AppCompatActivity {
                 new String[]{contactID},
                 null);
 
-        if (cursorPhone.moveToFirst()) {
+        if (cursorPhone != null && cursorPhone.moveToFirst()) {
             contactNumber = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
         }
 
@@ -279,7 +319,7 @@ public class MainActivity extends AppCompatActivity {
         // querying contact data store
         Cursor cursor = getContentResolver().query(uriContact, null, null, null, null);
 
-        if (cursor.moveToFirst()) {
+        if (cursor != null && cursor.moveToFirst()) {
 
             // DISPLAY_NAME = The display name for the contact.
             // HAS_PHONE_NUMBER =   An indicator of whether this contact has at least one phone number.
