@@ -87,6 +87,7 @@ public class NotificationService extends NotificationListenerService {
             Log.i(TAG, "Title: " + title);
             Log.i(TAG, "Text: " + text);
 
+            assert title != null;
             if (title.contains("missed voice calls")) {
                 String titleFirstString = title.substring(0,1);
                 int i = Integer.valueOf(titleFirstString);
@@ -104,7 +105,11 @@ public class NotificationService extends NotificationListenerService {
                     if (i >= 3) {
                         if (title.equalsIgnoreCase(titleFirstString + " missed voice calls")) {
                             if (text.contains(contactName)) {
-                                ringerModeNormal();
+                                if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
+                                    ringerModeNormal();
+                                } else {
+                                    ringerModeNormal();
+                                }
                             }
                         }
                     }

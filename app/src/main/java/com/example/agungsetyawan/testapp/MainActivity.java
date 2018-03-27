@@ -2,12 +2,14 @@ package com.example.agungsetyawan.testapp;
 
 import android.Manifest;
 import android.app.NotificationManager;
+import android.content.ComponentName;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -32,6 +34,7 @@ import com.cloudrail.si.CloudRail;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -76,21 +79,48 @@ public class MainActivity extends AppCompatActivity {
             loadData();
         }
 
-        getPermissionToNotificationListener();
         getPermissionToReadUserContacts();
+        getPermissionToNotificationListener();
         checkRingerMode();
         onCheckedSwitch();
         startService();
     }
 
-    public void startService() {
-        Intent intent = new Intent(this, NotificationService.class);
-        startService(intent);
+    public void onClickPermissionAutoStart(View view) {
+        getPermissionAutoStart();
     }
 
-    public void stopService() {
-        Intent intent = new Intent(this, NotificationService.class);
-        stopService(intent);
+    private void getPermissionAutoStart() {
+        try {
+            Intent intent = new Intent();
+            String manufacturer = android.os.Build.MANUFACTURER;
+
+            Log.i("Manufacturer", manufacturer);
+
+            if ("xiaomi".equalsIgnoreCase(manufacturer)) {
+                intent.setComponent(new ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"));
+            } else if ("oppo".equalsIgnoreCase(manufacturer)) {
+                intent.setComponent(new ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"));
+            } else if ("vivo".equalsIgnoreCase(manufacturer)) {
+                intent.setComponent(new ComponentName("com.vivo.permissionmanager", "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"));
+            } else if ("oneplus".equalsIgnoreCase(manufacturer)) {
+                intent.setComponent(new ComponentName("com.oneplus.security", "com.oneplus.security.chainlaunch.view.ChainLaunchAppListAct‌​ivity"));
+            }
+
+            List<ResolveInfo> list = this.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+            if (list.size() > 0) {
+                this.startActivity(intent);
+            }
+        } catch (Exception e) {
+            Log.d("Error", "" + e.toString());
+        }
+    }
+
+    public void startService() {
+        Intent intent = new Intent(this, MyNotificationService.class);
+        Intent intent2 = new Intent(this, NotificationService.class);
+        startService(intent);
+        startService(intent2);
     }
 
     private void getPermissionToNotificationListener() {
@@ -126,11 +156,26 @@ public class MainActivity extends AppCompatActivity {
             audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
             Toast.makeText(getApplicationContext(), "Normal", Toast.LENGTH_SHORT).show();
             Log.i(TAG, "Ring : Normal");
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL);
+            }
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_NORMAL);
+            audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0);
+            Toast.makeText(getApplicationContext(), "Normal", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Ring : Normal");
         }
     }
 
     private void ringerModeSilent() {
         if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
+            }
+            audioManager.setRingerMode(AudioManager.RINGER_MODE_SILENT);
+            Toast.makeText(getApplicationContext(), "Silent", Toast.LENGTH_SHORT).show();
+            Log.i(TAG, "Ring : Silent");
+        } else {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
             }
@@ -247,16 +292,14 @@ public class MainActivity extends AppCompatActivity {
 
             retrieveContactName();
             retrieveContactNumber();
+//            retrieveContactPhoto();
             saveData();
             startService();
-//            retrieveContactPhoto();
         }
     }
 
     private void retrieveContactPhoto() {
-
-        Bitmap photo = null;
-
+        Bitmap photo;
         try {
             InputStream inputStream = ContactsContract.Contacts.openContactPhotoInputStream(getContentResolver(),
                     ContentUris.withAppendedId(ContactsContract.Contacts.CONTENT_URI, new Long(contactID)));
@@ -265,18 +308,15 @@ public class MainActivity extends AppCompatActivity {
                 photo = BitmapFactory.decodeStream(inputStream);
                 ImageView imageView = findViewById(R.id.img_contact);
                 imageView.setImageBitmap(photo);
+                inputStream.close();
             } else {
                 ImageView imageView = findViewById(R.id.img_contact);
                 imageView.setImageResource(R.mipmap.ic_launcher);
             }
 
-            assert inputStream != null;
-            inputStream.close();
-
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     private void retrieveContactNumber() {
@@ -288,9 +328,9 @@ public class MainActivity extends AppCompatActivity {
 
         if (cursorID != null && cursorID.moveToFirst()) {
             contactID = cursorID.getString(cursorID.getColumnIndex(ContactsContract.Contacts._ID));
+            cursorID.close();
         }
 
-        cursorID.close();
 
         Log.d(TAG, "Contact ID: " + contactID);
 
@@ -307,9 +347,9 @@ public class MainActivity extends AppCompatActivity {
 
         if (cursorPhone != null && cursorPhone.moveToFirst()) {
             contactNumber = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+            cursorPhone.close();
         }
 
-        cursorPhone.close();
         textView2.setText(contactNumber);
         Log.d(TAG, "Contact Phone Number: " + contactNumber);
     }
@@ -325,12 +365,11 @@ public class MainActivity extends AppCompatActivity {
             // HAS_PHONE_NUMBER =   An indicator of whether this contact has at least one phone number.
 
             contactName = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+            cursor.close();
         }
 
-        cursor.close();
         textView1.setText(contactName);
         Log.d(TAG, "Contact Name: " + contactName);
-
     }
 
     private void saveData() {
