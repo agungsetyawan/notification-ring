@@ -1,4 +1,4 @@
-package com.example.agungsetyawan.testapp;
+package com.example.agungsetyawan.notif;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;

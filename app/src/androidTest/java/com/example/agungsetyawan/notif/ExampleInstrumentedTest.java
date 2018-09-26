@@ -1,4 +1,4 @@
-package com.example.agungsetyawan.testapp;
+package com.example.agungsetyawan.notif;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

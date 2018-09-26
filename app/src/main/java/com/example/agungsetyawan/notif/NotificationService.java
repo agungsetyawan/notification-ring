@@ -1,4 +1,4 @@
-package com.example.agungsetyawan.testapp;
+package com.example.agungsetyawan.notif;
 
 import android.app.NotificationManager;
 import android.content.Context;
@@ -46,7 +46,7 @@ public class NotificationService extends NotificationListenerService {
             contactName = sharedPreferences.getString("Name", "");
         }
         else {
-            contactName = "init";
+            contactName = " ";
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -72,49 +72,70 @@ public class NotificationService extends NotificationListenerService {
     public void onNotificationPosted(StatusBarNotification sbn) {
         Log.i(TAG, "New Notification");
         String pack = sbn.getPackageName();
+//        int timeCall = 3;
 
         if (pack.equalsIgnoreCase("com.whatsapp")) {
             String ticker = "";
+            String title = "";
+            String text = "";
+
             if (sbn.getNotification().tickerText != null) {
                 ticker = sbn.getNotification().tickerText.toString();
             }
             Bundle extras = sbn.getNotification().extras;
-            String title = extras.getString("android.title");
-            String text = extras.getCharSequence("android.text").toString();
-
-            Log.i(TAG, "Package: " + pack);
-            Log.i(TAG, "Ticker: " + ticker);
-            Log.i(TAG, "Title: " + title);
-            Log.i(TAG, "Text: " + text);
+            if (extras.getString("android.title") != null ) {
+                title = extras.getString("android.title");
+            }
+            if (extras.getCharSequence("android.text") != null) {
+                text = extras.getCharSequence("android.text").toString();
+            }
 
             assert title != null;
-            if (title.contains("missed voice calls")) {
-                String titleFirstString = title.substring(0,1);
-                int i = Integer.valueOf(titleFirstString);
-                if ((ticker.equalsIgnoreCase("Missed call from " + contactName))) {
-                    if (i >= 3) {
-                        if (title.equalsIgnoreCase(titleFirstString + " missed voice calls")) {
-                            if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
-                                ringerModeNormal();
-                            } else {
-                                ringerModeNormal();
-                            }
+            if (!title.equalsIgnoreCase("")) {
+                Log.i(TAG, "Package: " + pack);
+                Log.i(TAG, "Ticker: " + ticker);
+                Log.i(TAG, "Title: " + title);
+                Log.i(TAG, "Text: " + text);
+
+                if (title.contains("Missed voice call") || title.contains("missed voice calls")) {
+                    if (ticker.equalsIgnoreCase("Missed call from " + contactName) || ticker.equalsIgnoreCase("")) {
+                        if (text.contains(contactName)) {
+                            ringerModeNormal();
                         }
                     }
-                } else {
-                    if (i >= 3) {
-                        if (title.equalsIgnoreCase(titleFirstString + " missed voice calls")) {
-                            if (text.contains(contactName)) {
-                                if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
-                                    ringerModeNormal();
-                                } else {
-                                    ringerModeNormal();
-                                }
-                            }
-                        }
+                } else if (text.equalsIgnoreCase("Incoming voice call")) {
+                    if (title.equalsIgnoreCase(contactName)) {
+                        ringerModeNormal();
                     }
                 }
             }
+//            if (title.contains("missed voice calls")) {
+//                String titleFirstString = title.substring(0,1);
+//                int i = Integer.valueOf(titleFirstString);
+//                if ((ticker.equalsIgnoreCase("Missed call from " + contactName))) {
+//                    if (i >= timeCall) {
+//                        if (title.equalsIgnoreCase(titleFirstString + " missed voice calls")) {
+//                            if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
+//                                ringerModeNormal();
+//                            } else {
+//                                ringerModeNormal();
+//                            }
+//                        }
+//                    }
+//                } else {
+//                    if (i >= timeCall) {
+//                        if (title.equalsIgnoreCase(titleFirstString + " missed voice calls")) {
+//                            if (text.contains(contactName)) {
+//                                if (currentRingerMode == 1 && currentInterruptionFilter == 2) {
+//                                    ringerModeNormal();
+//                                } else {
+//                                    ringerModeNormal();
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
         }
     }
 

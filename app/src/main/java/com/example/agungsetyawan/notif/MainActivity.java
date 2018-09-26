@@ -1,4 +1,4 @@
-package com.example.agungsetyawan.testapp;
+package com.example.agungsetyawan.notif;
 
 import android.Manifest;
 import android.app.NotificationManager;
@@ -25,7 +25,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.CompoundButton;
-import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -306,12 +305,12 @@ public class MainActivity extends AppCompatActivity {
 
             if (inputStream != null) {
                 photo = BitmapFactory.decodeStream(inputStream);
-                ImageView imageView = findViewById(R.id.img_contact);
-                imageView.setImageBitmap(photo);
+//                ImageView imageView = findViewById(R.id.img_contact);
+//                imageView.setImageBitmap(photo);
                 inputStream.close();
             } else {
-                ImageView imageView = findViewById(R.id.img_contact);
-                imageView.setImageResource(R.mipmap.ic_launcher);
+//                ImageView imageView = findViewById(R.id.img_contact);
+//                imageView.setImageResource(R.mipmap.ic_launcher);
             }
 
         } catch (IOException e) {

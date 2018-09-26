@@ -1,9 +1,8 @@
-package com.example.agungsetyawan.testapp;
+package com.example.agungsetyawan.notif;
 
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
-import android.service.notification.StatusBarNotification;
 import android.widget.Toast;
 
 /**

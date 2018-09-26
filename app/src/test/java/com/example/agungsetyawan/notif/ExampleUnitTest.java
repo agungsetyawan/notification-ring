@@ -1,4 +1,4 @@
-package com.example.agungsetyawan.testapp;
+package com.example.agungsetyawan.notif;
 
 import org.junit.Test;
 
